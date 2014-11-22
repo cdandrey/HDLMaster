@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/">
+        <file>ico/main_open.png</file>
+        <file>ico/main_print.png</file>
+        <file>ico/main_save.png</file>
+        <file>ico/main_save_as.png</file>
+        <file>ico/wd_hint_d.png</file>
+        <file>ico/arrow_combo_box.png</file>
+    </qresource>
+</RCC>
