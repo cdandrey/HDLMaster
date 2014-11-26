@@ -6,6 +6,8 @@
 # ignore all folders
 **/
 !src/
+!src/ico/
+!src/ini/
 
 *.slo
 *.lo

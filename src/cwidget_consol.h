@@ -7,6 +7,7 @@ QT_BEGIN_NAMESPACE
 class CToolBarHeader;
 class QLabel;
 class QPlainTextEdit;
+class QSettings;
 QT_END_NAMESPACE
 
 class CWidgetConsol : public QWidget

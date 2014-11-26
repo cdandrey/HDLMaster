@@ -10,6 +10,8 @@ class CWidgetConsol;
 class CWidgetTree;
 class QAction;
 class QMenu;
+class QSettings;
+class QSplitter;
 QT_END_NAMESPACE
 
 class CWindowMain : public QMainWindow
@@ -23,14 +25,23 @@ public:
 
 private:
 
-    QAction             *m_actOpen;
-    QAction             *m_actSave;
-    QAction             *m_actSaveAs;
-    QMenu               *mainMenu;
+    QSettings         *m_settings;
 
-    CWidgetEdit       *m_widgetEdit;
+    QAction           *m_actOpen;
+    QAction           *m_actSave;
+    QAction           *m_actSaveAs;
+    QMenu             *m_menu;
+
+    QSplitter         *m_splTree;
+    QSplitter         *m_splConsol;
+
     CWidgetConsol     *m_widgetConsol;
+    CWidgetEdit       *m_widgetEdit;
     CWidgetTree       *m_widgetTree;
+
+    void applyStyleSheet();
+    void loadSettings();
+    void saveSettings();
 
 private slots:
 

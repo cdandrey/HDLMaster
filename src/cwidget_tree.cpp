@@ -1,6 +1,7 @@
 #include "cwidget_tree.h"
 
 #include <QAction>
+#include <QSettings>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
@@ -10,18 +11,13 @@
 CWidgetTree::CWidgetTree(QWidget *parent) :
     QWidget(parent)
 {
-    setStyleSheet("QTreeWidget{border: 0px solid #000;"
-                              "border-width: 0px 1px 0px 0px;}");
-
     m_header = new CToolBarHeader(tr("Дерево проекта"));
-
-    m_header->setStyleSheet(CToolBarHeader::styleBlackGradient(1,1,1,0));
-
     m_header->insertStretch(m_header->actHint());
 
     m_tree = new QTreeWidget();
     m_tree->setMinimumWidth(150);
     m_tree->setHeaderHidden(true);
+    m_tree->setObjectName("widgetTreeProject");
 
     QVBoxLayout *vbox = new QVBoxLayout();
     vbox->setMargin(0);
@@ -36,10 +32,14 @@ CWidgetTree::CWidgetTree(QWidget *parent) :
 
     m_actVisible = new QAction(tr("Отображать дерево проекта"),this);
     m_actVisible->setCheckable(true);
+    m_actVisible->setChecked(true);
+    m_actVisible->setObjectName("actVisibleTreeProject");
 
     connect(m_header->actHint(),SIGNAL(triggered()),this,SLOT(hide()));
     connect(m_actVisible,SIGNAL(toggled(bool)),this,SLOT(setVisible(bool)));
     connect(m_header->actHint(),SIGNAL(triggered(bool)),m_actVisible,SLOT(setChecked(bool)));
+
+    setObjectName("treeProject");
 }
 //------------------------------------------------------------------
 

@@ -4,6 +4,7 @@
 #include <QActionGroup>
 #include <QComboBox>
 #include <QPlainTextEdit>
+#include <QSettings>
 #include <QTextEdit>
 #include <QVBoxLayout>
 
@@ -12,13 +13,11 @@
 CWidgetEdit::CWidgetEdit(QWidget *parent) :
     QWidget(parent)
 {
-    setStyleSheet("QTextEdit {border: 0px;}");
-
     m_header = new CToolBarHeader();
 
     m_combo = new QComboBox();
     m_combo->addItem("<нет документа>");
-    m_combo->setFixedHeight(m_header->minimumHeight() - 2);
+    m_combo->setFixedHeight(m_header->minimumHeight() - 4);
     m_combo->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
 
     m_header->insertWidget(m_header->actHint(),m_combo);
@@ -40,6 +39,8 @@ CWidgetEdit::CWidgetEdit(QWidget *parent) :
     vbox->setStretch(1,100);
 
     connect(m_header->actHint(),SIGNAL(triggered()),this,SLOT(triggered_actHide()));
+
+    setObjectName("editSources");
 }
 //------------------------------------------------------------------
 

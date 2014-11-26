@@ -3,6 +3,7 @@
 #include <QAction>
 #include <QLabel>
 #include <QPlainTextEdit>
+#include <QSettings>
 #include <QScrollBar>
 #include <QVBoxLayout>
 
@@ -11,14 +12,12 @@
 CWidgetConsol::CWidgetConsol(QWidget *parent) :
     QWidget(parent)
 {
-    setStyleSheet("QPlainTextEdit {border: 0px;}");
-
     m_header = new CToolBarHeader(tr("Консоль"));
     m_header->insertStretch(m_header->actHint());
 
     m_actVisible = new QAction(tr("Отображать консоль"),this);
     m_actVisible->setCheckable(true);
-
+    m_actVisible->setChecked(true);
 
     m_edit = new QPlainTextEdit();
     m_edit->setFont(QFont("Courier",12));

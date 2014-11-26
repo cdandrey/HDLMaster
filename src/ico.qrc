@@ -6,5 +6,6 @@
         <file>ico/main_save_as.png</file>
         <file>ico/wd_hint_d.png</file>
         <file>ico/arrow_combo_box.png</file>
+        <file>ini/settings_default.ini</file>
     </qresource>
 </RCC>

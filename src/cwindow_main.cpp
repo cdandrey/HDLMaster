@@ -6,6 +6,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QScrollBar>
+#include <QSettings>
 #include <QSplitter>
 #include <QTextStream>
 #include <QTimerEvent>
@@ -18,35 +19,10 @@
 CWindowMain::CWindowMain(QWidget *parent)
     : QMainWindow(parent)
 {
-    setStyleSheet("QSplitter::handle:vertical {height: 0px;}"
-                  "QSplitter::handle:horizontal {width: 0px;}");
+    // create settings
+    loadSettings();
 
-    m_widgetEdit      = new CWidgetEdit(this);
-    m_widgetConsol      = new CWidgetConsol(this);
-    m_widgetConsol->setVisible(false);
-    m_widgetTree     = new CWidgetTree(this);
-
-    QSplitter *spTreeEdit = new QSplitter(Qt::Horizontal);
-    spTreeEdit->addWidget(m_widgetTree);
-    spTreeEdit->addWidget(m_widgetEdit);
-    spTreeEdit->setStretchFactor(1,100);
-
-    QSplitter *spMain = new QSplitter(Qt::Vertical);
-    spMain->addWidget(spTreeEdit);
-    spMain->addWidget(m_widgetConsol);
-    spMain->setStretchFactor(0,100);
-
-    QWidget *widgetCenter = new QWidget(this);
-    setCentralWidget(widgetCenter);
-
-    QHBoxLayout *hbox = new QHBoxLayout();
-    centralWidget()->setLayout(hbox);
-
-    hbox->addWidget(spMain);
-    hbox->setMargin(0);
-    hbox->setSpacing(0);
-    hbox->setStretch(0,100);
-
+    // create actions
     m_actOpen = new QAction(QIcon(":/ico/main_open.png"),tr("&Открыть"),this);
     m_actOpen->setShortcut(QKeySequence::Open);
     connect(m_actOpen,SIGNAL(triggered()),this,SLOT(on_open()));
@@ -59,33 +35,142 @@ CWindowMain::CWindowMain(QWidget *parent)
     m_actSaveAs->setShortcut(QKeySequence::SaveAs);
     connect(m_actSaveAs,SIGNAL(triggered()),this,SLOT(on_save_as()));
 
-    mainMenu = menuBar()->addMenu(tr("Файл"));
-    mainMenu->addAction(m_actOpen);
-    mainMenu->addAction(m_actSave);
-    mainMenu->addAction(m_actSaveAs);
+    // create main menu
+    m_menu = menuBar()->addMenu(tr("Файл"));
+    m_menu->addAction(m_actOpen);
+    m_menu->addAction(m_actSave);
+    m_menu->addAction(m_actSaveAs);
 
-    mainMenu = menuBar()->addMenu(tr("Вид"));
-    mainMenu->addAction(m_widgetConsol->actVisible());
-    mainMenu->addAction(m_widgetTree->actVisible());
+    // ceate widget consol
+    m_widgetConsol = new CWidgetConsol(this);
+    qDebug() << "state/consol_visible = " << m_settings->value("state/consol_visible").toBool();
+    m_widgetConsol->actVisible()->setChecked(m_settings->value("state/consol_visible").toBool());
 
-    mainMenu = menuBar()->addMenu(tr("Операции"));
-    mainMenu = menuBar()->addMenu(tr("Помощь"));
-
-    // main
     connect(this,SIGNAL(messageAppend(QString)),
             m_widgetConsol,SLOT(messageAppend(QString)));
-
     connect(this,SIGNAL(messageSet(QString)),
             m_widgetConsol,SLOT(messageSet(QString)));
-
     connect(this,SIGNAL(executingOperation(QString)),
             m_widgetConsol,SLOT(executingOperation(QString)));
+
+    // create widget edit sources
+    m_widgetEdit = new CWidgetEdit(this);
+
+    // create widget tree project
+    m_widgetTree     = new CWidgetTree(this);
+    qDebug() << "state/tree_visible = " << m_settings->value("state/tree_visible").toBool();
+    m_widgetTree->actVisible()->setChecked(m_settings->value("state/tree_visible").toBool());
+
+    // placement widgets
+    m_splTree = new QSplitter(Qt::Horizontal);
+    m_splTree->addWidget(m_widgetTree);
+    m_splTree->addWidget(m_widgetEdit);
+    qDebug() << "state/splTree = " << m_settings->value("state/splTree");
+    m_splTree->restoreState(m_settings->value("state/splTree").toByteArray());
+
+    m_splConsol = new QSplitter(Qt::Vertical);
+    m_splConsol->addWidget(m_splTree);
+    m_splConsol->addWidget(m_widgetConsol);
+    qDebug() << "state/splConsol = " << m_settings->value("state/splConsol");
+    m_splConsol->restoreState(m_settings->value("state/splConsol").toByteArray());
+
+    QWidget *widgetCenter = new QWidget(this);
+    setCentralWidget(widgetCenter);
+
+    QHBoxLayout *hbox = new QHBoxLayout();
+    centralWidget()->setLayout(hbox);
+
+    hbox->addWidget(m_splConsol);
+    hbox->setMargin(0);
+    hbox->setSpacing(0);
+    hbox->setStretch(0,100);
+
+    m_menu = menuBar()->addMenu(tr("Вид"));
+    m_menu->addAction(m_widgetConsol->actVisible());
+    m_menu->addAction(m_widgetTree->actVisible());
+
+    applyStyleSheet();
 }
 //-------------------------------------------------------------------
 
 
 CWindowMain::~CWindowMain()
 {
+    saveSettings();
+
+    m_settings->~QSettings();
+
+    m_actOpen->~QAction();
+    m_actSave->~QAction();
+    m_actSaveAs->~QAction();
+
+    m_menu->~QMenu();
+
+    m_widgetConsol->~QWidget();
+    m_widgetEdit->~QWidget();
+    m_widgetTree->~QWidget();
+
+    m_splTree->~QSplitter();
+    m_splConsol->~QSplitter();
+}
+//-------------------------------------------------------------------
+
+
+void CWindowMain::applyStyleSheet()
+{
+    QString style(m_settings->value("style/combobox").toString());
+    style += m_settings->value("style/lable").toString();
+    style += m_settings->value("style/plain_edit").toString();
+    style += m_settings->value("style/splitter").toString();
+    style += m_settings->value("style/text_edit").toString();
+    style += m_settings->value("style/tool_bar").toString();
+    style += m_settings->value("style/tool_button").toString();
+    style += m_settings->value("style/widget_tree").toString();
+
+    setStyleSheet(style);
+}
+//-------------------------------------------------------------------
+
+
+void CWindowMain::loadSettings()
+{
+    QFileInfo fileInfoSettings("settings.ini");
+
+    if (fileInfoSettings.isReadable())
+        m_settings = new QSettings("settings.ini",QSettings::IniFormat);
+    else
+        m_settings = new QSettings(":/ini/settings_default.ini",QSettings::IniFormat);
+
+    qDebug() << m_settings->fileName();
+}
+//-------------------------------------------------------------------
+
+
+void CWindowMain::saveSettings()
+{
+    QFile fileSettings("settings.ini");
+
+    if (!fileSettings.open(QIODevice::Append)) {
+        emit messageAppend(TStr("%1 : %2")
+                           .arg(tr("Невозможно открыть файл"))
+                           .arg(fileSettings.fileName()));
+        return;
+    }
+
+    QSettings *settings = new QSettings(fileSettings.fileName(),QSettings::IniFormat);
+
+    QStringList keys(m_settings->allKeys());
+    qDebug() << settings->fileName();
+
+    foreach (QString key, keys)
+        settings->setValue(key,m_settings->value(key));
+
+    settings->setValue("state/consol_visible",m_widgetConsol->actVisible()->isChecked());
+    settings->setValue("state/tree_visible",m_widgetTree->actVisible()->isChecked());
+    settings->setValue("state/splConsol",m_splConsol->saveState());
+    settings->setValue("state/splTree",m_splTree->saveState());
+
+    delete settings;
 }
 //-------------------------------------------------------------------
 

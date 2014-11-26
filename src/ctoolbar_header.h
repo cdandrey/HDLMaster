@@ -19,8 +19,6 @@ public:
     void insertSpace(QAction *before, int width);
     void insertStretch(QAction *before);
 
-    static QString styleBlackGradient(int top = 1,int right = 0,int bottom = 1,int left = 0);
-
     QString title() const;
 
 private:
