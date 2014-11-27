@@ -17,12 +17,9 @@ class CWidgetTree : public QWidget
     Q_OBJECT
 public:
     explicit CWidgetTree(QWidget *parent = 0);
+    ~CWidgetTree();
 
     QAction *actVisible(){return m_actVisible;}
-
-public slots:
-
-    void on_disabledHide(bool disabled);
 
 private:
 
@@ -30,11 +27,20 @@ private:
     QAction         *m_actVisible;
     QTreeWidget     *m_tree;
 
+    QStringList files;
+
 private slots:
 
-    void clicked_treeWidgetItem(QTreeWidgetItem*);
+    void addSrc(const QString& fileName, const QString& compName);
+    void disabledHide(bool disabled);
+    void doubleClickedTreeItem(QTreeWidgetItem*item);
 
 signals:
+
+    void messageAppend(const QString&);
+    void messageSet(const QString&);
+
+    void doubleClickedTreeItem(const QString &fileName);
 
 };
 

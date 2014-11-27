@@ -18,7 +18,7 @@
 typedef QByteArray         TByt;
 
 typedef QString            TStr;
-typedef QStringList        TLStr;
+typedef QStringList        TSLst;
 
 typedef QLinkedList<int>   TLnk;
 
@@ -42,30 +42,5 @@ typedef QVector<TLst>      TVLst;
 typedef QVector<TSet>      TVSet;
 
 typedef QPair<TSet,TSet>    TPSet;
-
-static const TStr Satisfiable = QObject::tr("выполнима");
-static const TStr Unsatisfiable = QObject::tr("не выполнима");
-static const TStr Undefine = QObject::tr("не определенно");
-
-typedef struct CSatData{
-
-    CSatData() :
-        description(""),
-        state(Undefine),
-        quantity(0),
-        time(0),
-        log(""),
-        sequence(TLst()) {}
-
-    TStr   description;
-    TStr   state;
-    double quantity;
-    double time;
-    TByt   log;
-    TLst   sequence;
-
-} TSatData;
-
-typedef QMap<TStr,TSatData*> TMapSatData;
 
 #endif // CBFTYPEDEF_H

@@ -14,6 +14,8 @@ class CToolBarHeader : public QToolBar
 public:
     explicit CToolBarHeader(QString title = "",QWidget *parent = 0);
 
+    ~CToolBarHeader();
+
     QAction *actHint(){return m_actHint;}
 
     void insertSpace(QAction *before, int width);
@@ -26,9 +28,7 @@ private:
     QAction *m_actHint;
     QLabel  *m_label;
 
-signals:
-
-public slots:
+private slots:
 
     void setTitle(const QString&);
 

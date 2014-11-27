@@ -17,6 +17,8 @@ CWidgetTree::CWidgetTree(QWidget *parent) :
     m_tree = new QTreeWidget();
     m_tree->setMinimumWidth(150);
     m_tree->setHeaderHidden(true);
+    m_tree->setColumnCount(2);
+    m_tree->setColumnHidden(1,true);
     m_tree->setObjectName("widgetTreeProject");
 
     QVBoxLayout *vbox = new QVBoxLayout();
@@ -28,7 +30,7 @@ CWidgetTree::CWidgetTree(QWidget *parent) :
     vbox->addWidget(m_tree);
 
     connect(m_tree,SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),
-            this,SLOT(clicked_treeWidgetItem(QTreeWidgetItem*)));
+            this,SLOT(doubleClickedTreeItem(QTreeWidgetItem*)));
 
     m_actVisible = new QAction(tr("Отображать дерево проекта"),this);
     m_actVisible->setCheckable(true);
@@ -38,20 +40,48 @@ CWidgetTree::CWidgetTree(QWidget *parent) :
     connect(m_header->actHint(),SIGNAL(triggered()),this,SLOT(hide()));
     connect(m_actVisible,SIGNAL(toggled(bool)),this,SLOT(setVisible(bool)));
     connect(m_header->actHint(),SIGNAL(triggered(bool)),m_actVisible,SLOT(setChecked(bool)));
+    connect(m_tree,SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),this,SLOT(doubleClickedTreeItem(QTreeWidgetItem*)));
 
     setObjectName("treeProject");
 }
 //------------------------------------------------------------------
 
 
-void CWidgetTree::on_disabledHide(bool disabled)
+CWidgetTree::~CWidgetTree()
+{
+    m_actVisible->~QAction();
+    m_header->~CToolBarHeader();
+    m_tree->~QTreeWidget();
+}
+//------------------------------------------------------------------
+
+
+void CWidgetTree::addSrc(const QString &fileName, const QString &compName)
+{
+    if (m_tree->findItems(fileName,Qt::MatchRecursive,1).size() > 0) {
+        emit messageAppend(tr("Файл уже открыт %1").arg(fileName));
+        return;
+    }
+
+    QTreeWidgetItem *item = new QTreeWidgetItem(m_tree);
+
+    item->setText(0,compName);
+    item->setText(1,fileName);
+
+    emit messageAppend(QString("%1 %2").arg(tr("Файл успешно открыт")).arg(fileName));
+}
+//------------------------------------------------------------------
+
+
+void CWidgetTree::disabledHide(bool disabled)
 {
     m_header->actHint()->setDisabled(disabled);
 }
 //------------------------------------------------------------------
 
 
-void CWidgetTree::clicked_treeWidgetItem(QTreeWidgetItem*)
+void CWidgetTree::doubleClickedTreeItem(QTreeWidgetItem* item)
 {
+    emit doubleClickedTreeItem(item->text(1));
 }
 //------------------------------------------------------------------

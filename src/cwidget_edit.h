@@ -19,8 +19,7 @@ class CWidgetEdit : public QWidget
 public:
 
     explicit CWidgetEdit(QWidget *parent = 0);
-
-public slots:
+    ~CWidgetEdit();
 
 private:
 
@@ -29,8 +28,19 @@ private:
     QComboBox       *m_combo;
     QTextEdit       *m_edit;
 
+    QMap<QString,QString> files;
+
 private slots:
-    void triggered_actHide();
+
+    void view(const QString &fileName);
+    void viewChanged(int);
+    void textChanged();
+    void triggeredActHide();
+
+signals:
+
+    void messageAppend(const QString&);
+    void messageSet(const QString&);
 };
 
 #endif // CWIDGET_EDIT_H

@@ -7,7 +7,7 @@ QT_BEGIN_NAMESPACE
 class CToolBarHeader;
 class QLabel;
 class QPlainTextEdit;
-class QSettings;
+class QTime;
 QT_END_NAMESPACE
 
 class CWidgetConsol : public QWidget
@@ -15,14 +15,14 @@ class CWidgetConsol : public QWidget
     Q_OBJECT
 public:
     explicit CWidgetConsol(QWidget *parent = 0);
+    ~CWidgetConsol();
 
     QAction *actVisible(){return m_actVisible;}
 
-public slots:
+private slots:
 
     void messageAppend(const QString &message);
     void messageSet(const QString &message);
-
     void executingOperation(const QString&);
 
 private:
@@ -30,6 +30,7 @@ private:
     CToolBarHeader  *m_header;
     QAction         *m_actVisible;
     QPlainTextEdit  *m_edit;
+    QTime           *m_time;
 
 signals:
 

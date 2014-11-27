@@ -3,8 +3,6 @@
 #include <QAction>
 #include <QLabel>
 
-//const QString CToolBarHeader::StyleSheet = "";
-
 CToolBarHeader::CToolBarHeader(QString title,QWidget *parent) :
     QToolBar(parent)
 {
@@ -23,6 +21,14 @@ CToolBarHeader::CToolBarHeader(QString title,QWidget *parent) :
 
     addWidget(m_label);
     addAction(m_actHint);
+}
+//------------------------------------------------------------------
+
+
+CToolBarHeader::~CToolBarHeader()
+{
+    m_actHint->~QAction();
+    m_label->~QLabel();
 }
 //------------------------------------------------------------------
 

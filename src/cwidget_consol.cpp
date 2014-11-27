@@ -5,6 +5,7 @@
 #include <QPlainTextEdit>
 #include <QSettings>
 #include <QScrollBar>
+#include <QTime>
 #include <QVBoxLayout>
 
 #include "ctoolbar_header.h"
@@ -38,31 +39,49 @@ CWidgetConsol::CWidgetConsol(QWidget *parent) :
     connect(m_actVisible,SIGNAL(toggled(bool)),this,SLOT(setVisible(bool)));
     connect(m_actVisible,SIGNAL(toggled(bool)),m_actVisible,SLOT(setChecked(bool)));
     connect(m_header->actHint(),SIGNAL(triggered(bool)),m_actVisible,SLOT(setChecked(bool)));
+
+    m_time = new QTime();
+}
+//------------------------------------------------------------------
+
+
+CWidgetConsol::~CWidgetConsol()
+{
+    m_actVisible->~QAction();
+    m_header->~CToolBarHeader();
+    m_edit->~QPlainTextEdit();
+    delete m_time;
 }
 //------------------------------------------------------------------
 
 
 void CWidgetConsol::messageAppend(const QString &message)
 {
-    m_edit->appendPlainText(message);
+    m_actVisible->setChecked(true);
+    m_edit->appendPlainText(QString("[%1] %2")
+                            .arg(m_time->currentTime().toString("hh:mm:ss"))
+                            .arg(message));
 }
 //------------------------------------------------------------------
 
 
 void CWidgetConsol::messageSet(const QString &message)
 {
-    m_edit->setPlainText(message);
+    m_actVisible->setChecked(true);
+    m_edit->setPlainText(QString("[%1] %2")
+                         .arg(m_time->currentTime().toString("hh:mm:ss"))
+                         .arg(message));
 }
 //------------------------------------------------------------------
 
 
-void CWidgetConsol::executingOperation(const QString &operation)
+void CWidgetConsol::executingOperation(const QString&)
 {
-    if (operation == "finished") {
-        m_header->setTitle(tr("Консоль"));
-    } else {
-        m_header->setTitle(operation);
-    }
+//    if (operation == "finished") {
+//        m_header->setTitle(tr("Консоль"));
+//    } else {
+//        m_header->setTitle(operation);
+//    }
 }
 //------------------------------------------------------------------
 

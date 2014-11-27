@@ -9,6 +9,7 @@ class CWidgetEdit;
 class CWidgetConsol;
 class CWidgetTree;
 class QAction;
+class QFileInfo;
 class QMenu;
 class QSettings;
 class QSplitter;
@@ -45,9 +46,9 @@ private:
 
 private slots:
 
-    void on_open();
-    void on_save();
-    void on_save_as();
+    void open();
+    void save();
+    void saveAs();
     //void on_save(const TStr &fileName,CBFView *bfv);
 
 signals:
@@ -55,6 +56,7 @@ signals:
     void messageAppend(const QString&);
     void messageSet(const QString&);
     void executingOperation(const QString&);
+    void openSrc(const QString&,const QString&);
 
 };
 

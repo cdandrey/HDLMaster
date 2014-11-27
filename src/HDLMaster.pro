@@ -18,7 +18,8 @@ SOURCES += main.cpp \
     cwidget_consol.cpp \
     cwidget_edit.cpp \
     cwidget_tree.cpp \
-    cproject.cpp
+    cproject.cpp \
+    cparser_vhdl.cpp
 
 HEADERS  += \
     cwindow_main.h \
@@ -26,7 +27,9 @@ HEADERS  += \
     cwidget_consol.h \
     cwidget_edit.h \
     cwidget_tree.h \
-    cproject.h
+    cproject.h \
+    typedef.h \
+    cparser_vhdl.h
 
 RESOURCES += \
     ico.qrc
