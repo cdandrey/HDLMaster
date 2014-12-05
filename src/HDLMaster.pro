@@ -19,7 +19,8 @@ SOURCES += main.cpp \
     cwidget_edit.cpp \
     cwidget_tree.cpp \
     cproject.cpp \
-    cparser_vhdl.cpp
+    cproject_object.cpp \
+    cproject_src.cpp
 
 HEADERS  += \
     cwindow_main.h \
@@ -29,7 +30,8 @@ HEADERS  += \
     cwidget_tree.h \
     cproject.h \
     typedef.h \
-    cparser_vhdl.h
+    cproject_object.h \
+    cproject_src.h
 
 RESOURCES += \
     ico.qrc

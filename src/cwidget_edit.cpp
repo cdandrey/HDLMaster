@@ -16,7 +16,8 @@
 #include "ctoolbar_header.h"
 
 CWidgetEdit::CWidgetEdit(QWidget *parent) :
-    QWidget(parent)
+    QWidget(parent),
+    comboCurrentIndex(0)
 {
     m_header = new CToolBarHeader();
 
@@ -45,8 +46,8 @@ CWidgetEdit::CWidgetEdit(QWidget *parent) :
     vbox->setStretch(1,100);
 
     connect(m_header->actHint(),SIGNAL(triggered()),this,SLOT(triggeredActHide()));
-    connect(m_combo,SIGNAL(currentIndexChanged(int)),this,SLOT(viewChanged(int)));
-    connect(m_edit,SIGNAL(textChanged()),this,SLOT(textChanged()));
+    connect(m_combo,SIGNAL(currentIndexChanged(int)),this,SLOT(comboCurrentIndexChanged(int)));
+    connect(m_edit,SIGNAL(textChanged()),this,SLOT(editTextChanged()));
 
     setObjectName("editSources");
 }
@@ -79,8 +80,8 @@ void CWidgetEdit::view(const QString &fileName)
         }
 
         // disconnected first open so not set flag of modification
-        disconnect(m_combo,SIGNAL(currentIndexChanged(int)),this,SLOT(viewChanged(int)));
-        disconnect(m_edit,SIGNAL(textChanged()),this,SLOT(textChanged()));
+        disconnect(m_combo,SIGNAL(currentIndexChanged(int)),this,SLOT(comboCurrentIndexChanged(int)));
+        disconnect(m_edit,SIGNAL(textChanged()),this,SLOT(editTextChanged()));
 
         m_edit->setVisible(true);
         m_edit->setPlainText(stream.readAll());
@@ -92,29 +93,44 @@ void CWidgetEdit::view(const QString &fileName)
 
         m_combo->addItem(fileNameBase,fileName);
         m_combo->setCurrentText(fileNameBase);
+        comboCurrentIndex = m_combo->currentIndex();
 
         // return default connected
-        connect(m_combo,SIGNAL(currentIndexChanged(int)),this,SLOT(viewChanged(int)));
-        connect(m_edit,SIGNAL(textChanged()),this,SLOT(textChanged()));
+        connect(m_combo,SIGNAL(currentIndexChanged(int)),this,SLOT(comboCurrentIndexChanged(int)));
+        connect(m_edit,SIGNAL(textChanged()),this,SLOT(editTextChanged()));
     }
 }
 //------------------------------------------------------------------
 
 
-void CWidgetEdit::viewChanged(int)
+void CWidgetEdit::comboCurrentIndexChanged(int newCurrentIndex)
 {
-    m_edit->setPlainText(files[m_combo->currentData().toString()]);
+    if (newCurrentIndex == comboCurrentIndex)
+        return;
+
+    if (newCurrentIndex > 0) {
+        files[m_combo->itemData(comboCurrentIndex).toString()] = m_edit->toPlainText();
+        m_edit->setPlainText(files[m_combo->currentData().toString()]);
+    }
+    else {
+        if (m_combo->count() > 1)
+            m_combo->setCurrentIndex(comboCurrentIndex);
+    }
+
+    comboCurrentIndex = newCurrentIndex;
 }
 //------------------------------------------------------------------
 
 
-void CWidgetEdit::textChanged()
+void CWidgetEdit::editTextChanged()
 {
-    if (m_edit->toPlainText() != files[m_combo->currentData().toString()] &&
-            m_combo->currentText().at(m_combo->currentText().length() - 1) != '*')
-        m_combo->setItemText(m_combo->currentIndex(),m_combo->currentText() + "*");
+    if (m_combo->currentIndex() > 0) {
 
-    files[m_combo->currentData().toString()] = m_edit->toPlainText();
+        QChar lastChar(m_combo->currentText().at(m_combo->currentText().length() - 1));
+
+        if ((lastChar != '*') && (m_edit->toPlainText() != files[m_combo->currentData().toString()]))
+            m_combo->setItemText(m_combo->currentIndex(),m_combo->currentText() + "*");
+    }
 }
 //------------------------------------------------------------------
 
@@ -123,6 +139,7 @@ void CWidgetEdit::triggeredActHide()
 {
     if (m_combo->currentIndex() > 0) {
 
+        files.erase(files.find(m_combo->currentData().toString()));
         m_combo->removeItem(m_combo->currentIndex());
 
         if (m_combo->currentIndex() == 0) {

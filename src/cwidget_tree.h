@@ -2,9 +2,10 @@
 #define CWIDGET_TREE_H
 
 #include <QWidget>
-#include "typedef.h"
 
 QT_BEGIN_NAMESPACE
+class CProject;
+class CProjectSrc;
 class CToolBarHeader;
 class QAction;
 class QThread;
@@ -23,24 +24,30 @@ public:
 
 private:
 
-    CToolBarHeader  *m_header;
-    QAction         *m_actVisible;
-    QTreeWidget     *m_tree;
+    CToolBarHeader      *m_header;
+    QAction             *m_actVisible;
+    QTreeWidget         *m_tree;
 
-    QStringList files;
+    CProject            *m_pro;
+    QList<CProjectSrc*>  m_src;
+
+    static const QString ItemFolder;
+
+    void addItem(QTreeWidgetItem *parent,const QString& file,const QString& inst);
 
 private slots:
 
-    void addSrc(const QString& fileName, const QString& compName);
+    void addSrc(CProjectSrc* src);
+    void addProject(CProject* pro);
     void disabledHide(bool disabled);
-    void doubleClickedTreeItem(QTreeWidgetItem*item);
+    void clickedTreeItem(QTreeWidgetItem*item);
 
 signals:
 
     void messageAppend(const QString&);
     void messageSet(const QString&);
 
-    void doubleClickedTreeItem(const QString &fileName);
+    void clickedTreeItem(const QString &fileName);
 
 };
 

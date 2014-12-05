@@ -28,13 +28,14 @@ private:
     QComboBox       *m_combo;
     QTextEdit       *m_edit;
 
+    int comboCurrentIndex;
     QMap<QString,QString> files;
 
 private slots:
 
     void view(const QString &fileName);
-    void viewChanged(int);
-    void textChanged();
+    void comboCurrentIndexChanged(int newCurrentIndex);
+    void editTextChanged();
     void triggeredActHide();
 
 signals:

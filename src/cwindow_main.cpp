@@ -1,4 +1,5 @@
 #include <QtDebug>
+#include <QDir>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -9,9 +10,10 @@
 #include <QSettings>
 #include <QSplitter>
 #include <QTextStream>
+#include <QThread>
 #include <QTimerEvent>
 
-#include "cparser_vhdl.h"
+#include "cproject_object.h"
 #include "cwidget_edit.h"
 #include "cwidget_consol.h"
 #include "cwidget_tree.h"
@@ -24,21 +26,25 @@ CWindowMain::CWindowMain(QWidget *parent)
     loadSettings();
 
     // create actions
-    m_actOpen = new QAction(QIcon(":/ico/main_open.png"),tr("&Открыть"),this);
+    m_actOpen = new QAction(QIcon(":/ico/main_open.png"),tr("Открыть"),this);
     m_actOpen->setShortcut(QKeySequence::Open);
     connect(m_actOpen,SIGNAL(triggered()),this,SLOT(open()));
 
-    m_actSave = new QAction(QIcon(":/ico/main_save.png"),tr("&Сохранить"),this);
+    m_actOpenXise = new QAction(tr("Открыть ISE проект"),this);
+    connect(m_actOpenXise,SIGNAL(triggered()),this,SLOT(openXise()));
+
+    m_actSave = new QAction(QIcon(":/ico/main_save.png"),tr("Сохранить"),this);
     m_actSave->setShortcut(QKeySequence::Save);
     connect(m_actSave,SIGNAL(triggered()),this,SLOT(save()));
 
-    m_actSaveAs = new QAction(QIcon(":/ico/main_save_as.png"),tr("&Сохранить как"),this);
+    m_actSaveAs = new QAction(QIcon(":/ico/main_save_as.png"),tr("Сохранить как"),this);
     m_actSaveAs->setShortcut(QKeySequence::SaveAs);
     connect(m_actSaveAs,SIGNAL(triggered()),this,SLOT(saveAs()));
 
     // create main menu
     m_menu = menuBar()->addMenu(tr("Файл"));
     m_menu->addAction(m_actOpen);
+    m_menu->addAction(m_actOpenXise);
     m_menu->addAction(m_actSave);
     m_menu->addAction(m_actSaveAs);
 
@@ -62,8 +68,8 @@ CWindowMain::CWindowMain(QWidget *parent)
     m_widgetTree     = new CWidgetTree(this);
     m_widgetTree->actVisible()->setChecked(m_settings->value("state/tree_visible").toBool());
     connect(m_widgetTree,SIGNAL(messageAppend(QString)),m_widgetConsol,SLOT(messageAppend(QString)));
-    connect(m_widgetTree,SIGNAL(doubleClickedTreeItem(QString)),m_widgetEdit,SLOT(view(QString)));
-    connect(this,SIGNAL(openSrc(QString,QString)),m_widgetTree,SLOT(addSrc(QString,QString)));
+    connect(m_widgetTree,SIGNAL(clickedTreeItem(QString)),m_widgetEdit,SLOT(view(QString)));
+    connect(this,SIGNAL(openSrc(CProjectSrc*)),m_widgetTree,SLOT(addSrc(CProjectSrc*)));
 
     // placement widgets
     m_splTree = new QSplitter(Qt::Horizontal);
@@ -91,6 +97,11 @@ CWindowMain::CWindowMain(QWidget *parent)
     m_menu->addAction(m_widgetConsol->actVisible());
     m_menu->addAction(m_widgetTree->actVisible());
 
+    m_proObj = new CProjectObject();
+    connect(m_proObj,SIGNAL(succefull(CProject*)),m_widgetTree,SLOT(addProject(CProject*)));
+    connect(m_proObj,SIGNAL(messageAppend(QString)),m_widgetConsol,SLOT(messageAppend(QString)));
+    connect(m_proObj,SIGNAL(messageSet(QString)),m_widgetConsol,SLOT(messageSet(QString)));
+
     applyStyleSheet();
 }
 //-------------------------------------------------------------------
@@ -103,6 +114,7 @@ CWindowMain::~CWindowMain()
     m_settings->~QSettings();
 
     m_actOpen->~QAction();
+    m_actOpenXise->~QAction();
     m_actSave->~QAction();
     m_actSaveAs->~QAction();
 
@@ -176,25 +188,45 @@ void CWindowMain::saveSettings()
 
 void CWindowMain::open()
 {
-    TSLst lstFiles =  QFileDialog::getOpenFileNames(this,tr("Открыть"),"",
-                                                    tr("Файл VHDL(*.%1)").arg("vhd"));
+    QStringList lstFiles =  QFileDialog::getOpenFileNames(this,tr("Открыть"),
+                                                    QDir::currentPath(),
+                                                    tr("Файл VHDL(*.vhd)"));
 
-    foreach (QString fileName, lstFiles) {
+    foreach (QString srcFileName, lstFiles)
+        emit openSrc(CProjectSrc::create(srcFileName));
 
-        QFile file(fileName);
-        QTextStream stream(&file);
+}
+//------------------------------------------------------------------
 
-        if (!file.open(QIODevice::ReadOnly)){
-            emit messageAppend(QString("%1 %2")
-                               .arg(tr("ОШИБКА! Невозможно открыть файл"))
-                               .arg(fileName));
-            continue;
-        }
 
-        emit openSrc(fileName,CParserVhdl(stream.readAll()).componentName());
+void CWindowMain::openXise()
+{
+    QString proFileName(QFileDialog::getOpenFileName(this,m_actOpenXise->text(),
+                                               QDir::currentPath(),
+                                               tr("Проект ISE(*.xise)")));
 
-        file.close();
+    if (proFileName.isEmpty())
+        return;
+
+    if (!QFileInfo(proFileName).isReadable()) {
+        emit messageAppend(QString("%1 %2")
+                           .arg(tr("ОШИБКА! Невозможно открыть файл"))
+                           .arg(proFileName));
+        return;
     }
+
+    QDir::setCurrent(QFileInfo(proFileName).absolutePath());
+
+    QThread *thr = new QThread(this);
+
+    m_proObj->setProFile(proFileName);
+    m_proObj->moveToThread(thr);
+
+    connect(thr,SIGNAL(started()),m_proObj,SLOT(openXise()));
+    connect(m_proObj,SIGNAL(succefull()),thr,SLOT(quit()));
+    connect(thr,SIGNAL(finished()),thr,SLOT(deleteLater()));
+
+    thr->start(QThread::HighPriority);
 }
 //------------------------------------------------------------------
 
