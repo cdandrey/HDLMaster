@@ -15,6 +15,7 @@ class QFileInfo;
 class QMenu;
 class QSettings;
 class QSplitter;
+class QThread;
 QT_END_NAMESPACE
 
 class CWindowMain : public QMainWindow
@@ -31,9 +32,11 @@ private:
     QSettings         *m_settings;
 
     QAction           *m_actOpen;
-    QAction           *m_actOpenXise;
+    QAction           *m_actOpenPro;
+    QAction           *m_actClose;
     QAction           *m_actSave;
     QAction           *m_actSaveAs;
+    QAction           *m_actQuit;
     QMenu             *m_menu;
 
     QSplitter         *m_splTree;
@@ -44,6 +47,7 @@ private:
     CWidgetTree       *m_widgetTree;
 
     CProjectObject    *m_proObj;
+    QThread           *m_thr;
 
     void applyStyleSheet();
     void loadSettings();
@@ -52,12 +56,15 @@ private:
 private slots:
 
     void open();
-    void openXise();
+    void openProject();
+    void openProjectFinish(bool succes);
+    void closeProject();
     void save();
     void saveAs();
 
 signals:
     void addProject(CProject*);
+    void clearTree();
 
     void messageAppend(const QString&);
     void messageSet(const QString&);

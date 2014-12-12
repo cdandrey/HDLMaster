@@ -6,8 +6,20 @@
         <file>ico/main_save_as.png</file>
         <file>ico/wd_hint_d.png</file>
         <file>ico/arrow_combo_box.png</file>
-        <file>ini/settings_default.ini</file>
         <file>ico/logo.png</file>
+        <file>ico/doc_mif.png</file>
+        <file>ico/doc_ngc.png</file>
+        <file>ico/doc_thd.png</file>
+        <file>ico/doc_ucf.png</file>
+        <file>ico/doc_unknown.png</file>
+        <file>ico/doc_v.png</file>
+        <file>ico/doc_vhd.png</file>
         <file>ico/folder.png</file>
+        <file>ico/folder_lib.png</file>
+        <file>ico/folder_mif.png</file>
+        <file>ico/folder_ngc.png</file>
+        <file>ico/folder_src.png</file>
+        <file>ico/folder_ucf.png</file>
+        <file>ico/main_quit.png</file>
     </qresource>
 </RCC>

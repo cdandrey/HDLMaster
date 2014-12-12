@@ -8,55 +8,102 @@
 class CProjectSrc
 {
 public:
+
+    enum SrcType {Cmp,Icmp,Lib,Mif,Ngc,Ucf};
+
     CProjectSrc(){}
-    virtual ~CProjectSrc();
+    virtual ~CProjectSrc() {}
 
-    virtual QString compName() const  {return Noname;}
-    virtual QString fileName() const  {return Noname;}
+    virtual QString compName() const {return Unknown;}
+    virtual QString fileName() const  {return Unknown;}
+    virtual CProjectSrc::SrcType type() const {return CProjectSrc::Cmp;}
 
-    virtual QString comp() const {return Noname;}
+    virtual QStringList list(CProjectSrc::SrcType) const {return QStringList();}
 
-    virtual QString inst() const {return Noname;}
-    virtual QString beginInst() {return inst();}
-    virtual QString nextInst() {return inst();}
-    virtual QString prevInst() {return inst();}
+    virtual QString next(CProjectSrc::SrcType) const {return Unknown;}
+    virtual QString peekNext(CProjectSrc::SrcType) const {return Unknown;}
+    virtual void toFront() const {return;}
+    virtual bool hasNext(CProjectSrc::SrcType) const {return false;}
 
-    virtual void parsed(const QString&) {};
+    virtual void parsed(const QString&) {}
+
+    virtual QString suffix() const {return Unknown;}
+    virtual QString suffixIco() const {return UnknownIco;}
 
     static CProjectSrc* create(const QString& fileName);
 
+    static const CProjectSrc m_srcUnknown;
+    static const QString Unknown;
+    static const QString UnknownIco;
+
+    static const QString SuffixMif;
     static const QString SuffixNgc;
     static const QString SuffixThdl;
     static const QString SuffixVerilog;
     static const QString SuffixVhdl;
     static const QString SuffixUcf;
 
-    static const QString Noname;
+    static const QString SuffixIcoMif;
+    static const QString SuffixIcoNgc;
+    static const QString SuffixIcoThdl;
+    static const QString SuffixIcoVerilog;
+    static const QString SuffixIcoVhdl;
+    static const QString SuffixIcoUcf;
+
+protected:
+
+    QString baseName(const QString& file) const;
+
 };
 //--------------------------------------------------
 
-//class CProjectSrcNgc : public CProjectSrc
-//{
-//public:
-//    explicit CProjectSrcNgc(const QString& fileName);
 
-//    QString nameComp(){return UnknownComponent;}
-//    QString nameFile(){return m_fileName;}
+//
+// Delivered classes
+//
 
-//    const QString& nameComp() const {return UnknownComponent;}
-//    const QString& nameFile() const {return m_fileName;}
 
-//    QMap<QString,QStringList> componets() {return QMap<QString,QStringList>();}
-//    const QMap<QString,QStringList> componets() const {return QMap<QString,QStringList>();}
+class CProjectSrcMif : public CProjectSrc
+{
+public:
 
-//    void parsed(const QString&){}
+    explicit CProjectSrcMif(const QString& fileName = "") :
+          m_fileName(fileName)
+    {}
 
-//private:
+    QString compName() const {return CProjectSrc::baseName(m_fileName);}
+    QString fileName() const {return m_fileName;}
+    CProjectSrc::SrcType type() const {return CProjectSrc::Mif;}
 
-//    CProjectSrcNgc(){}
+    virtual QString suffix() const {return CProjectSrc::SuffixMif;}
+    virtual QString suffixIco() const {return CProjectSrc::SuffixIcoMif;}
 
-//    QString m_fileName;
-//};
+private:
+
+    QString m_fileName;
+};
+//--------------------------------------------------
+
+
+class CProjectSrcNgc : public CProjectSrc
+{
+public:
+
+    explicit CProjectSrcNgc(const QString& fileName = "") :
+          m_fileName(fileName)
+    {}
+
+    QString compName() const {return CProjectSrc::baseName(m_fileName);}
+    QString fileName() const {return m_fileName;}
+    CProjectSrc::SrcType type() const {return CProjectSrc::Ngc;}
+
+    virtual QString suffix() const {return CProjectSrc::SuffixNgc;}
+    virtual QString suffixIco() const {return CProjectSrc::SuffixIcoNgc;}
+
+private:
+
+    QString m_fileName;
+};
 //--------------------------------------------------
 
 
@@ -121,77 +168,63 @@ public:
 class CProjectSrcVhdl : public CProjectSrc
 {
 public:
-    explicit CProjectSrcVhdl(const QString& fileName = "");
+
+    explicit CProjectSrcVhdl(const QString& fileName = "") :
+          m_fileName(fileName),
+          m_compName(""),
+          m_type(Cmp),
+          m_i(-1)
+    {}
 
     QString compName() const {return m_compName;}
     QString fileName() const {return m_fileName;}
+    CProjectSrc::SrcType type() const {return m_type;}
 
-//    QString comp() const {return m_it != m_instances.end() ? m_it.value() : Noname;}
-
-//    QString inst() const {return m_it != m_instances.end() ? mergeName(m_it.key()) : Noname;}
-//    QString beginInst()  {return m_instances.isEmpty() ? Noname : mergeName((m_it = m_instances.begin()).key());}
-//    QString nextInst()   {m_it != m_instances.end()   ? ++m_it : m_it; return inst();}
-//    QString prevInst()   {m_it != m_instances.begin() ? --m_it : m_it = m_instances.end(); return inst();}
-
-    QString comp() const {return m_i < m_inst.size() ? comp(m_i) : Noname;}
-
-    QString inst() const {return m_i < m_inst.size() ? m_inst.at(m_i) : Noname;}
-    QString beginInst()  {return m_inst.isEmpty() ? Noname : m_inst.at(m_i = 0);}
-    QString nextInst()   {m_i < m_inst.size() ? ++m_i : m_i; return inst();}
-    QString prevInst()   {m_i > 0 ? --m_i : m_i = m_inst.size(); return inst();}
+    QStringList list(CProjectSrc::SrcType type) const;
+    QString next(CProjectSrc::SrcType type) const;
+    QString peekNext(CProjectSrc::SrcType type) const;
+    void toFront() const {m_i = -1;}
+    bool hasNext(CProjectSrc::SrcType type) const;
 
     void parsed(const QString& listing);
 
+    QString suffix() const {return CProjectSrc::SuffixVhdl;}
+    QString suffixIco() const {return CProjectSrc::SuffixIcoVhdl;}
+
 private:
 
-    //CProjectSrcVhdl(){}
-
-    QString m_fileName;                 //
+    QString m_fileName;
     QString m_compName;
+    CProjectSrc::SrcType m_type;
 
-    //QMap<QString,QStringList> m_compInst;   // first - name comp,
-    QStringList m_packages;                 // list include packages
+    QStringList m_icmp;
+    QStringList m_lib;
+    QStringList m_mif;
 
-    QStringList m_inst;
-    QMap<QString,QString> m_instances;      // first - names instances of comp, second - name comp
-
-    QMap<QString,QString>::iterator m_it;
-    int m_i;
-
-    QString mergeName(const QString& instName) const {
-        return QString("%1 - %2").arg(instName)
-                                 .arg(m_instances.value(instName,Noname));
-    }
-
-    QString comp(int i) const {
-        return (QString(m_inst.at(i)).remove(QRegExp("\\b\\w+\\s-\\s"))).toLower();
-    }
+    mutable int m_i;
 };
 //--------------------------------------------------
 
 
-//class CProjectSrcUcf : public CProjectSrc
-//{
-//public:
-//    explicit CProjectSrcUcf(const QString& fileName);
+class CProjectSrcUcf : public CProjectSrc
+{
+public:
 
-//    QString nameComp(){return UnknownComponent;}
-//    QString nameFile(){return m_fileName;}
+    explicit CProjectSrcUcf(const QString& fileName = "") :
+          m_fileName(fileName)
+    {}
 
-//    const QString& nameComp() const {return UnknownComponent;}
-//    const QString& nameFile() const {return m_fileName;}
+    QString compName() const {return CProjectSrc::baseName(m_fileName);}
+    QString fileName() const {return m_fileName;}
+    CProjectSrc::SrcType type() const {return CProjectSrc::Ucf;}
 
-//    QMap<QString,QStringList> componets() {return QMap<QString,QStringList>();}
-//    const QMap<QString,QStringList> componets() const {return QMap<QString,QStringList>();}
+    virtual QString suffix() const {return CProjectSrc::SuffixUcf;}
+    virtual QString suffixIco() const {return CProjectSrc::SuffixIcoUcf;}
 
-//    void parsed(const QString&){}
+private:
 
-//private:
-
-//    CProjectSrcUcf(){}
-
-//    QString m_fileName;
-//};
+    QString m_fileName;
+};
 //--------------------------------------------------
 
 Q_DECLARE_METATYPE(CProjectSrc)

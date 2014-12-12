@@ -13,7 +13,15 @@ public:
     explicit CProjectObject(const QString& proFileName,QObject *parent = 0);
     ~CProjectObject();
 
-    void setProFile(const QString& proFileName) {m_pro->setProFile(proFileName);}
+    bool create(const QString& proFileName);
+    bool clear();
+
+    QString fileName() {return isEmpty() ?  CProjectSrc::Unknown:m_pro->proFile();}
+    QString projectName() {return isEmpty() ? CProjectSrc::Unknown:m_pro->proName();}
+
+    CProject* project() {return m_pro;}
+
+    bool isEmpty() {return m_pro == NULL ? true:false;}
 
 private:
 
@@ -21,15 +29,14 @@ private:
 
 signals:
 
-    void messageAppend(const QString&);
-    void messageSet(const QString&);
+    void messageAppend(QString);
+    void messageSet(QString);
 
-    void succefull(CProject*);
-    void succefull();
+    void finished(bool);
 
 private slots:
 
-    void openXise();
+    void open();
 
 };
 

@@ -7,28 +7,31 @@ class CProject
 {
 public:
 
-    explicit CProject(const QString& fileName = CProjectSrc::Noname)
-                : m_file(fileName),
-                  m_name(CProjectSrc::Noname),
-                  m_top(CProjectSrc::Noname){}
+    explicit CProject(const QString& fileName = CProjectSrc::Unknown);
+
+    ~CProject();
 
     QString proFile()    const {return m_file;}
     QString proName()    const {return m_name;}
     QString proTopFile() const {return m_top;}
 
-    QString compName(const QString& file) {return m_fileComp.value(file)->compName();}
-    QString fileName(const QString& comp) {return m_compFile.value(comp,CProjectSrc::Noname);}
+    QString compName(const QString& file);
+    QString fileName(const QString& comp);
 
-    QString inst(const QString& file) const {return m_fileComp.value(file)->inst();}
-    QString instComp(const QString& file) const {return m_fileComp.value(file)->comp();}
-    QString beginInst(const QString& file) const {return m_fileComp.value(file)->beginInst();}
-    QString nextInst(const QString& file) const {return m_fileComp.value(file)->nextInst();}
-    QString prevInst(const QString& file) const {return m_fileComp.value(file)->prevInst();}
+    const CProjectSrc* next() const {return m_it.next().value();}
+    const CProjectSrc* peekNext() const {return m_it.peekNext().value();}
+    bool hasNext() const {return m_it.hasNext();}
+    bool toFile(CProjectSrc::SrcType type,const QString& file) const;
+    void toFront(CProjectSrc::SrcType type) const;
+
+    const CProjectSrc *src(CProjectSrc::SrcType type,const QString& file);
+    const CProjectSrc *src() const {return m_it.value();}
 
     bool open(const QString& fileName);
     bool parsedXise(const QString& listing);
 
-    void setProFile(const QString& fileName);
+    static const QString SuffixMpro;
+    static const QString SuffixXise;
 
 private:
 
@@ -36,8 +39,17 @@ private:
     QString m_name;
     QString m_top;
 
-    QMap<QString,CProjectSrc*> m_fileComp;
-    QMap<QString,QString> m_compFile;
+    QMap<QString,CProjectSrc*> m_fileCmp;
+    QMap<QString,QString> m_cmpFile;
+
+    QMap<QString,CProjectSrc*> m_fileLib;
+    QMap<QString,QString> m_libFile;
+
+    QMap<QString,CProjectSrc*> m_fileMif;
+    QMap<QString,CProjectSrc*> m_fileNgc;
+    QMap<QString,CProjectSrc*> m_fileUcf;
+
+    mutable QMapIterator<QString,CProjectSrc*> m_it;
 };
 
 Q_DECLARE_METATYPE(CProject)

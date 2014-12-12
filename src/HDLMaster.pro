@@ -29,9 +29,9 @@ HEADERS  += \
     cwidget_edit.h \
     cwidget_tree.h \
     cproject.h \
-    typedef.h \
     cproject_object.h \
     cproject_src.h
 
 RESOURCES += \
-    ico.qrc
+    ico.qrc \
+    ini.qrc

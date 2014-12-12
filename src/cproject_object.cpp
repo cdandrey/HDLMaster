@@ -9,50 +9,96 @@
 
 CProjectObject::CProjectObject(QObject *parent) :
     QObject(parent),
-    m_pro(new CProject())
-{ }
+    m_pro(NULL)
+{
+
+}
 //------------------------------------------------------------------
 
 
 CProjectObject::CProjectObject(const QString &proFileName, QObject *parent) :
     QObject(parent),
     m_pro(new CProject(proFileName))
-{ }
+{
+
+}
 //------------------------------------------------------------------
 
 
 CProjectObject::~CProjectObject()
 {
-    delete m_pro;
+    if (!isEmpty())
+        delete m_pro;
 }
 //------------------------------------------------------------------
 
 
-void CProjectObject::openXise()
+bool CProjectObject::create(const QString &proFileName)
 {
-    emit messageSet(tr("Читаются файлы проекта %1").arg(m_pro->proFile()));
+    qDebug() << "create "  << proFileName;
+
+    if (!isEmpty())
+        return false;
+
+    QFileInfo info(proFileName);
+
+    if (info.suffix() != CProject::SuffixMpro &&
+        info.suffix() != CProject::SuffixXise)
+    {
+        emit messageAppend(tr("ОШИБКА! Неизвестный формат файла проекта."));
+        return false;
+    }
+
+    if (!info.isReadable()) {
+        emit messageAppend(QString("%1 %2")
+                           .arg(tr("ОШИБКА! Невозможно открыть файл"))
+                           .arg(proFileName));
+        return false;
+    }
+
+    m_pro = new CProject(proFileName);
+
+    return true;
+}
+//------------------------------------------------------------------
+
+
+bool CProjectObject::clear()
+{
+    if (!isEmpty()) {
+        delete m_pro;
+        m_pro = NULL;
+        return true;
+    }
+
+    return false;
+}
+//------------------------------------------------------------------
+
+
+void CProjectObject::open()
+{
+    if (isEmpty())
+        return;
 
     QFile proFile(m_pro->proFile());
 
     if (!proFile.open(QIODevice::ReadOnly)){
-        emit messageAppend(QString("%1 %2")
-                           .arg(tr("ОШИБКА! Невозможно открыть файл"))
+        emit messageAppend(QString("%1 %2").arg(tr("ОШИБКА! Невозможно открыть файл"))
                            .arg(m_pro->proFile()));
-        emit succefull();
+        emit finished(false);
         return;
     }
 
     QTextStream stream(&proFile);
 
-    QString listing(stream.readAll());
+    if (QFileInfo(proFile).suffix() == CProject::SuffixXise)
+        if (!m_pro->parsedXise(stream.readAll())){
+            emit messageAppend(tr("ОШИБКА! Возникла ошбика во время чтения файла проекта."));
+            emit finished(false);
+            return;
+        }
 
-    if (!m_pro->parsedXise(listing)){
-        emit succefull();
-        return;
-    }
-
-    emit succefull();
-    emit messageAppend(tr("Чтение файлов успешно завершенно."));
-    emit succefull(m_pro);
+    emit finished(true);
 }
 //------------------------------------------------------------------
