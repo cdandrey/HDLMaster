@@ -86,20 +86,21 @@ CProjectSrc* CProjectSrc::create(const QString &fileName)
 QStringList CProjectSrcVhdl::list(CProjectSrc::SrcType type) const
 {
     if (type == CProjectSrc::Cmp){
-        QStringList cmp;
-        QRegExp rx("\\b\\w+\\s-\\s");
-        foreach(QString icmp,m_icmp)
-            cmp << icmp.remove(rx).toLower();
-        return cmp;
+        QStringList lstCmp;
+        foreach(QString cmp,m_modCmp.values()) {
+            if (!lstCmp.contains(cmp))
+                lstCmp << cmp;
+        }
+        return lstCmp;
     }
 
     switch (type) {
-    case CProjectSrc::Icmp:
-        return m_icmp;
     case CProjectSrc::Lib:
         return m_lib;
     case CProjectSrc::Mif:
         return m_mif;
+    case CProjectSrc::Mod:
+        return m_mod;
     default:;
     }
 
@@ -108,30 +109,46 @@ QStringList CProjectSrcVhdl::list(CProjectSrc::SrcType type) const
 //------------------------------------------------------------------
 
 
-QString CProjectSrcVhdl::next(CProjectSrc::SrcType type) const
+bool CProjectSrcVhdl::isEmpty(CProjectSrc::SrcType type) const
 {
-    QString str(peekNext(type));
-    ++m_i;
-    return str;
+    switch (type) {
+    case CProjectSrc::Cmp:
+    case CProjectSrc::Mod:
+        return m_mod.isEmpty();
+    case CProjectSrc::Lib:
+        return m_lib.isEmpty();
+    case CProjectSrc::Mif:
+        return m_mif.isEmpty();
+    default:;
+    }
+
+    return true;
 }
 //------------------------------------------------------------------
 
 
-QString CProjectSrcVhdl::peekNext(CProjectSrc::SrcType type) const
+QString CProjectSrcVhdl::modCmp(const QString &mod) const
 {
-    int i(m_i);
-    ++i;
+    return m_modCmp.constFind(mod) != m_modCmp.cend() ?
+                m_modCmp.value(mod) : CProjectSrc::Unknown;
+}
+//------------------------------------------------------------------
 
+
+QString CProjectSrcVhdl::next(CProjectSrc::SrcType type) const
+{
     switch (type) {
+
     case CProjectSrc::Cmp:
-        return i < m_icmp.size() ? QString(m_icmp.at(i)).remove(QRegExp("\\b\\w+\\s-\\s")).toLower() :
-                                     CProjectSrc::Unknown;
-    case CProjectSrc::Icmp:
-        return i < m_icmp.size() ? m_icmp.at(i) : CProjectSrc::Unknown;
+        return m_it.hasNext() ? modCmp(m_it.next()) : CProjectSrc::Unknown;
+
     case CProjectSrc::Lib:
-        return i < m_lib.size() ? m_lib.at(i) : CProjectSrc::Unknown;
     case CProjectSrc::Mif:
-        return i < m_mif.size() ? m_mif.at(i) : CProjectSrc::Unknown;
+        return m_it.hasNext() ? m_it.next() : CProjectSrc::Unknown;
+
+    case CProjectSrc::Mod:
+        return m_it.hasNext() ? m_it.next() : CProjectSrc::Unknown;
+
     default:;
     }
 
@@ -140,16 +157,61 @@ QString CProjectSrcVhdl::peekNext(CProjectSrc::SrcType type) const
 //------------------------------------------------------------------
 
 
+QString CProjectSrcVhdl::peekNext(CProjectSrc::SrcType type) const
+{
+    switch (type) {
+
+    case CProjectSrc::Cmp:
+        return m_it.hasNext() ? modCmp(m_it.peekNext()) : CProjectSrc::Unknown;
+
+    case CProjectSrc::Lib:
+    case CProjectSrc::Mif:
+        return m_it.hasNext() ? m_it.peekNext() : CProjectSrc::Unknown;
+
+    case CProjectSrc::Mod:
+        return m_it.hasNext() ? m_it.peekNext() : CProjectSrc::Unknown;
+
+    default:;
+    }
+
+    return CProjectSrc::Unknown;
+}
+//------------------------------------------------------------------
+
+
+void CProjectSrcVhdl::toFront(CProjectSrc::SrcType type) const
+{
+    switch (type) {
+    case CProjectSrc::Cmp:
+    case CProjectSrc::Mod:
+        m_it = QStringListIterator(m_mod);
+        break;
+
+    case CProjectSrc::Lib:
+        m_it = QStringListIterator(m_lib);
+        break;
+
+    case CProjectSrc::Mif:
+        m_it = QStringListIterator(m_mif);
+        break;
+
+    default:
+        m_it = QStringListIterator(QStringList());
+    }
+}
+//------------------------------------------------------------------
+
+
 bool CProjectSrcVhdl::hasNext(CProjectSrc::SrcType type) const
 {
     switch (type) {
     case CProjectSrc::Cmp:
-    case CProjectSrc::Icmp:
-        return (m_i + 1) < m_icmp.size() ? true : false;
+    case CProjectSrc::Mod:
+        return m_it.hasNext();
     case CProjectSrc::Lib:
-        return (m_i + 1) < m_lib.size() ? true : false;
+        return m_it.hasNext();
     case CProjectSrc::Mif:
-        return (m_i + 1) < m_mif.size() ? true : false;
+        return m_it.hasNext();
     default:;
     }
 
@@ -199,10 +261,12 @@ void CProjectSrcVhdl::parsed(const QString &listing)
 
     while ((pos = rx.indexIn(listing,pos)) != -1) {
         if (rx.cap(4).isEmpty() && rx.cap(5).isEmpty()) {
-            m_icmp << QString("%1 - %2").arg(rx.cap(1)).arg(rx.cap(2));
+            m_mod << rx.cap(1);
+            m_modCmp.insert(rx.cap(1),rx.cap(2));
         }
         else {
-            m_icmp << QString("%1 - %2").arg(rx.cap(4)).arg(rx.cap(5));
+            m_mod << rx.cap(4);
+            m_modCmp.insert(rx.cap(4),rx.cap(5));
         }
         pos += rx.matchedLength();
     }

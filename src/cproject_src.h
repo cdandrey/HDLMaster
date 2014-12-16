@@ -9,26 +9,28 @@ class CProjectSrc
 {
 public:
 
-    enum SrcType {Cmp,Icmp,Lib,Mif,Ngc,Ucf};
+    enum SrcType {Cmp,Lib,Mif,Mod,Ngc,Ucf};
 
     CProjectSrc(){}
     virtual ~CProjectSrc() {}
 
-    virtual QString compName() const {return Unknown;}
-    virtual QString fileName() const  {return Unknown;}
+    virtual QString compName() const {return CProjectSrc::Unknown;}
+    virtual QString fileName() const  {return CProjectSrc::Unknown;}
     virtual CProjectSrc::SrcType type() const {return CProjectSrc::Cmp;}
 
     virtual QStringList list(CProjectSrc::SrcType) const {return QStringList();}
+    virtual bool isEmpty(CProjectSrc::SrcType) const {return true;}
+    virtual QString modCmp(const QString&) const {return CProjectSrc::Unknown;}
 
-    virtual QString next(CProjectSrc::SrcType) const {return Unknown;}
-    virtual QString peekNext(CProjectSrc::SrcType) const {return Unknown;}
-    virtual void toFront() const {return;}
+    virtual QString next(CProjectSrc::SrcType) const {return CProjectSrc::Unknown;}
+    virtual QString peekNext(CProjectSrc::SrcType) const {return CProjectSrc::Unknown;}
+    virtual void toFront(CProjectSrc::SrcType) const {return;}
     virtual bool hasNext(CProjectSrc::SrcType) const {return false;}
 
     virtual void parsed(const QString&) {}
 
-    virtual QString suffix() const {return Unknown;}
-    virtual QString suffixIco() const {return UnknownIco;}
+    virtual QString suffix() const {return CProjectSrc::Unknown;}
+    virtual QString suffixIco() const {return CProjectSrc::UnknownIco;}
 
     static CProjectSrc* create(const QString& fileName);
 
@@ -173,7 +175,7 @@ public:
           m_fileName(fileName),
           m_compName(""),
           m_type(Cmp),
-          m_i(-1)
+          m_it(QStringList())
     {}
 
     QString compName() const {return m_compName;}
@@ -181,9 +183,12 @@ public:
     CProjectSrc::SrcType type() const {return m_type;}
 
     QStringList list(CProjectSrc::SrcType type) const;
+    bool isEmpty(CProjectSrc::SrcType type) const;
+    QString modCmp(const QString &mod) const;
+
     QString next(CProjectSrc::SrcType type) const;
     QString peekNext(CProjectSrc::SrcType type) const;
-    void toFront() const {m_i = -1;}
+    void toFront(SrcType type) const;
     bool hasNext(CProjectSrc::SrcType type) const;
 
     void parsed(const QString& listing);
@@ -197,11 +202,12 @@ private:
     QString m_compName;
     CProjectSrc::SrcType m_type;
 
-    QStringList m_icmp;
+    QMap<QString,QString> m_modCmp;
+    QStringList m_mod;
     QStringList m_lib;
     QStringList m_mif;
 
-    mutable int m_i;
+    mutable QStringListIterator m_it;
 };
 //--------------------------------------------------
 

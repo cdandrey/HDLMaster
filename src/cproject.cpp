@@ -28,16 +28,34 @@ CProject::~CProject()
 //------------------------------------------------------------------
 
 
-QString CProject::compName(const QString &file)
+QString CProject::compName(const QString &file) const
 {
-    return m_fileCmp.value(file)->compName();
+    return m_fileCmp.constFind(file) != m_fileCmp.cend() ?
+            m_fileCmp.value(file)->compName() : CProjectSrc::Unknown;
 }
 //------------------------------------------------------------------
 
 
-QString CProject::fileName(const QString &comp)
+QString CProject::fileName(const QString &comp) const
 {
-    return m_cmpFile.value(comp,CProjectSrc::Unknown);
+    return m_cmpFile.value(comp.toLower(),CProjectSrc::Unknown);
+}
+//------------------------------------------------------------------
+
+
+QStringList CProject::includes(const QString &cmp,CProjectSrc::SrcType type) const
+{
+    switch (type) {
+    case CProjectSrc::Cmp:
+        return m_cmpInc.value(cmp.toLower());
+    case CProjectSrc::Lib:
+        return m_libInc.value(cmp.toLower());
+    case CProjectSrc::Mif:
+        return m_mifInc.value(cmp);
+    default:;
+    }
+
+    return QStringList();
 }
 //------------------------------------------------------------------
 
@@ -46,7 +64,7 @@ void CProject::toFront(CProjectSrc::SrcType type) const
 {
     switch (type) {
     case CProjectSrc::Cmp:
-    case CProjectSrc::Icmp:
+    case CProjectSrc::Mod:
         m_it = QMapIterator<QString,CProjectSrc*>(m_fileCmp);
         break;
     case CProjectSrc::Lib:
@@ -61,6 +79,8 @@ void CProject::toFront(CProjectSrc::SrcType type) const
     case CProjectSrc::Ucf:
         m_it = QMapIterator<QString,CProjectSrc*>(m_fileUcf);
         break;
+    default:
+        m_it = QMapIterator<QString,CProjectSrc*>(QMap<QString,CProjectSrc*>());
     }
 }
 //------------------------------------------------------------------
@@ -72,7 +92,7 @@ bool CProject::toFile(CProjectSrc::SrcType type, const QString &file) const
     QMap<QString,CProjectSrc*>::const_iterator itFind;
     switch (type) {
     case CProjectSrc::Cmp:
-    case CProjectSrc::Icmp:
+    case CProjectSrc::Mod:
         m_it = QMapIterator<QString,CProjectSrc*>(m_fileCmp);
         itEnd = m_fileCmp.cend();
         itFind = m_fileCmp.constFind(file);
@@ -97,6 +117,8 @@ bool CProject::toFile(CProjectSrc::SrcType type, const QString &file) const
         itEnd = m_fileUcf.cend();
         itFind = m_fileUcf.constFind(file);
         break;
+    default:
+        return false;
     }
 
     if (itEnd != itFind) {
@@ -115,7 +137,7 @@ const CProjectSrc* CProject::src(CProjectSrc::SrcType type, const QString &file)
     QMap<QString,CProjectSrc*>::const_iterator itEnd;
     switch (type) {
     case CProjectSrc::Cmp:
-    case CProjectSrc::Icmp:
+    case CProjectSrc::Mod:
         itEnd = m_fileCmp.cend();
         it = m_fileCmp.constFind(file);
         break;
@@ -134,6 +156,9 @@ const CProjectSrc* CProject::src(CProjectSrc::SrcType type, const QString &file)
     case CProjectSrc::Ucf:
         itEnd = m_fileUcf.cend();
         it = m_fileUcf.constFind(file);
+        break;
+    default:
+        return &CProjectSrc::m_srcUnknown;
     }
 
     return it != itEnd ? it.value() : &CProjectSrc::m_srcUnknown;
@@ -150,7 +175,6 @@ bool CProject::open(const QString&)
 
 bool CProject::parsedXise(const QString& listing)
 {
-    qDebug() << "parsed";
     // determ is xise project
     QRegExp rx("<version\\s+xil_pn\\s*:\\s*ise_version\\s*=\\s*\"\\s*[\\d.]+\\s*\"\\s+"
                "xil_pn\\s*:\\s*schema_version\\s*=\\s*\"\\s*[\\d.]+\\s*\"\\/>");
@@ -186,7 +210,7 @@ bool CProject::parsedXise(const QString& listing)
                     m_libFile.insert(src->compName().toLower(),src->fileName());
                 }
 
-                src->toFront();
+                src->toFront(CProjectSrc::Mif);
                 while (src->hasNext(CProjectSrc::Mif)){
                     QString fileMif(src->next(CProjectSrc::Mif));
                     if (m_fileMif.constFind(fileMif) == m_fileMif.cend())
@@ -203,6 +227,26 @@ bool CProject::parsedXise(const QString& listing)
 
     if (m_fileCmp.isEmpty())
         return false;
+
+    // create list includes for components, libreris and mif
+
+    toFront(CProjectSrc::Cmp);
+    while (hasNext()){
+        QString nameCmp(peekNext()->compName());
+        foreach (QString val, peekNext()->list(CProjectSrc::Cmp))
+            m_cmpInc[val.toLower()] << nameCmp;
+        foreach (QString val, peekNext()->list(CProjectSrc::Lib))
+            m_libInc[val.toLower()] << nameCmp;
+        foreach (QString val, next()->list(CProjectSrc::Mif))
+            m_mifInc[QFileInfo(val).baseName()] << nameCmp;
+    }
+
+    toFront(CProjectSrc::Lib);
+    while (hasNext()){
+        QString nameCmp(peekNext()->compName());
+        foreach (QString cmp, next()->list(CProjectSrc::Lib))
+            m_libInc[cmp.toLower()] << nameCmp;
+    }
 
     // get top file
     pos = 0;

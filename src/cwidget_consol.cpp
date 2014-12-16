@@ -3,7 +3,7 @@
 #include <QAction>
 #include <QLabel>
 #include <QPlainTextEdit>
-#include <QSettings>
+//#include <QSettings>
 #include <QScrollBar>
 #include <QTime>
 #include <QVBoxLayout>
@@ -16,7 +16,7 @@ CWidgetConsol::CWidgetConsol(QWidget *parent) :
     m_header = new CToolBarHeader(tr("Консоль"));
     m_header->insertStretch(m_header->actHint());
 
-    m_actVisible = new QAction(tr("Отображать консоль"),this);
+    m_actVisible = new QAction(tr("Окно консоли"),this);
     m_actVisible->setCheckable(true);
     m_actVisible->setChecked(true);
 

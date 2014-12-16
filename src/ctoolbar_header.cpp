@@ -4,22 +4,23 @@
 #include <QLabel>
 
 CToolBarHeader::CToolBarHeader(QString title,QWidget *parent) :
-    QToolBar(parent)
+    QToolBar(parent),
+    m_actHint(NULL),
+    m_label(NULL)
 {
     setIconSize(QSize(16,16));
-    setMinimumHeight(28);
+    setMinimumHeight(26);
+    setMaximumHeight(26);
     setMovable(false);
-    setObjectName("Title");
-
-    m_label = new QLabel(title);
-    m_label->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
-    m_label->setMargin(5);
-    m_label->setObjectName("Title");
 
     m_actHint = new QAction(QIcon(":/ico/wd_hint_d.png"),tr("Закрыть окно"),this);
-    m_actHint->setObjectName("Title");
 
-    addWidget(m_label);
+    if (!title.isEmpty()) {
+        m_label = new QLabel(title);
+        m_label->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
+        addWidget(m_label);
+    }
+
     addAction(m_actHint);
 }
 //------------------------------------------------------------------
@@ -27,8 +28,11 @@ CToolBarHeader::CToolBarHeader(QString title,QWidget *parent) :
 
 CToolBarHeader::~CToolBarHeader()
 {
-    m_actHint->~QAction();
-    m_label->~QLabel();
+    if (m_actHint != NULL)
+        m_actHint->~QAction();
+
+    if (m_label != NULL)
+        m_label->~QLabel();
 }
 //------------------------------------------------------------------
 

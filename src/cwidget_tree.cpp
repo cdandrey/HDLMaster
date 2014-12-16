@@ -1,30 +1,44 @@
 #include "cwidget_tree.h"
+#include "cproject.h"
+#include "ctoolbar_header.h"
 
 #include <QDebug>
 #include <QAction>
-#include <QSettings>
+#include <QComboBox>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
-
-#include "cproject.h"
-#include "cproject_src.h"
-#include "ctoolbar_header.h"
 
 const QString CWidgetTree::ItemFolder("ItemFolder");
 
 CWidgetTree::CWidgetTree(QWidget *parent) :
     QWidget(parent)
 {
-    m_header = new CToolBarHeader(tr("Дерево проекта"));
-    m_header->insertStretch(m_header->actHint());
+    m_actVisible = new QAction(tr("Окно обозревателя проекта"),this);
+    m_actVisible->setCheckable(true);
+    m_actVisible->setChecked(true);
+
+    m_combo = new QComboBox();
+    m_combo->addItem(tr("Проект"));
+    m_combo->addItem(tr("Зависимости"));
+    m_combo->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+
+    m_header = new CToolBarHeader();
+
+    m_header->insertWidget(m_header->actHint(),m_combo);
+    m_header->insertSpace(m_header->actHint(),0);
 
     m_tree = new QTreeWidget();
     m_tree->setMinimumWidth(150);
     m_tree->setHeaderHidden(true);
     m_tree->setColumnCount(2);
     m_tree->setColumnHidden(1,true);
-    //m_tree->setIconSize(QSize(24,24));
+
+    m_treeIndep = new QTreeWidget();
+    m_treeIndep->setMinimumWidth(150);
+    m_treeIndep->setHeaderHidden(true);
+    m_treeIndep->setColumnCount(2);
+    m_treeIndep->setColumnHidden(1,true);
 
     QVBoxLayout *vbox = new QVBoxLayout();
     vbox->setMargin(0);
@@ -33,18 +47,24 @@ CWidgetTree::CWidgetTree(QWidget *parent) :
 
     vbox->addWidget(m_header);
     vbox->addWidget(m_tree);
+    vbox->addWidget(m_treeIndep);
 
-    m_actVisible = new QAction(tr("Отображать дерево проекта"),this);
-    m_actVisible->setCheckable(true);
-    m_actVisible->setChecked(true);
-    m_actVisible->setObjectName("actVisibleTreeProject");
-
-    connect(m_header->actHint(),SIGNAL(triggered()),this,SLOT(hide()));
+    connect(m_combo,SIGNAL(currentIndexChanged(int)),this,SLOT(currentComboIndexChange(int)));
     connect(m_actVisible,SIGNAL(toggled(bool)),this,SLOT(setVisible(bool)));
+    connect(m_header->actHint(),SIGNAL(triggered()),this,SLOT(hide()));
     connect(m_header->actHint(),SIGNAL(triggered(bool)),m_actVisible,SLOT(setChecked(bool)));
     connect(m_tree,SIGNAL(itemClicked(QTreeWidgetItem*,int)),this,SLOT(clickedTreeItem(QTreeWidgetItem*)));
+    connect(m_treeIndep,SIGNAL(itemClicked(QTreeWidgetItem*,int)),this,SLOT(clickedTreeItem(QTreeWidgetItem*)));
+    connect(this,SIGNAL(clearTree()),m_tree,SLOT(clear()));
 
-    setObjectName("treeProject");
+    m_fontBold = font();
+    m_fontBold.setBold(true);
+
+    m_fontBoldItalic = font();
+    m_fontBoldItalic.setBold(true);
+    m_fontBoldItalic.setItalic(true);
+
+    emit m_combo->currentIndexChanged(0);
 }
 //------------------------------------------------------------------
 
@@ -52,8 +72,10 @@ CWidgetTree::CWidgetTree(QWidget *parent) :
 CWidgetTree::~CWidgetTree()
 {
     m_actVisible->~QAction();
+    m_combo->~QComboBox();
     m_header->~CToolBarHeader();
     m_tree->~QTreeWidget();
+    m_treeIndep->~QTreeWidget();
 }
 //------------------------------------------------------------------
 
@@ -75,56 +97,116 @@ void CWidgetTree::addSrc(CProjectSrc* src)
 
 void CWidgetTree::addProject(CProject *pro)
 {
-    QTreeWidgetItem *itemPro = new QTreeWidgetItem(m_tree);
-    itemPro->setText(0,pro->proName());
-    itemPro->setText(1,pro->proFile());
-    QFont proFont(font());
-    proFont.setWeight(QFont::Bold);
-    itemPro->setFont(0,proFont);
-    itemPro->setIcon(0,QIcon(":/ico/folder.png"));
+    // create project tree
+    QTreeWidgetItem *itPro = new QTreeWidgetItem(m_tree);
+    itPro->setText(0,pro->proName());
+    itPro->setText(1,pro->proFile());
+    itPro->setFont(0,m_fontBold);
+    itPro->setIcon(0,QIcon(":/ico/folder.png"));
 
     pro->toFront(CProjectSrc::Cmp);
     if (pro->hasNext()) {
-        QTreeWidgetItem *itemSrc = new QTreeWidgetItem(itemPro);
-        itemSrc->setText(0,folderName(CProjectSrc::Cmp));
-        itemSrc->setText(1,ItemFolder);
-        itemSrc->setIcon(0,QIcon(folderIco(CProjectSrc::Cmp)));
+        QTreeWidgetItem *itSrc = new QTreeWidgetItem(itPro);
+        itSrc->setText(0,folderName(CProjectSrc::Cmp));
+        itSrc->setText(1,ItemFolder);
+        itSrc->setIcon(0,QIcon(folderIco(CProjectSrc::Cmp)));
 
-        addItem(pro,itemSrc,pro->compName(pro->proTopFile()),pro->proTopFile());
+        addItem(itSrc,pro,pro->compName(pro->proTopFile()),
+                          pro->proTopFile());
     }
 
-    addItem(pro,itemPro,CProjectSrc::Lib);
-    addItem(pro,itemPro,CProjectSrc::Mif);
-    addItem(pro,itemPro,CProjectSrc::Ngc);
-    addItem(pro,itemPro,CProjectSrc::Ucf);
+    addItem(itPro,pro,CProjectSrc::Lib);
+    addItem(itPro,pro,CProjectSrc::Mif);
+    addItem(itPro,pro,CProjectSrc::Ngc);
+    addItem(itPro,pro,CProjectSrc::Ucf);
+
+    // create independ tree
+    QTreeWidgetItem *itCmp = new QTreeWidgetItem(m_treeIndep);
+    itCmp->setText(0,folderName(CProjectSrc::Cmp));
+    itCmp->setText(1,ItemFolder);
+    itCmp->setIcon(0,QIcon(folderIco(CProjectSrc::Cmp)));
+
+    pro->toFront(CProjectSrc::Cmp);
+    while (pro->hasNext()) {
+
+        const CProjectSrc *src = pro->next();
+        QTreeWidgetItem *it = new QTreeWidgetItem(itCmp);
+        it->setText(0,src->compName());
+        it->setText(1,src->fileName());
+        it->setIcon(0,QIcon(src->suffixIco()));
+
+        addItem(it,pro,tr("Библиотеки"),src->list(CProjectSrc::Lib));
+        addItem(it,pro,tr("Входящие в состав компоненты"),src->list(CProjectSrc::Cmp));
+        addItem(it,pro,tr("Входит в состав компонентов"),pro->includes(src->compName(),CProjectSrc::Cmp));
+    }
+
+    itCmp->sortChildren(0,Qt::AscendingOrder);
+
+    QTreeWidgetItem *itLib = new QTreeWidgetItem(m_treeIndep);
+    itLib->setText(0,folderName(CProjectSrc::Lib));
+    itLib->setText(1,ItemFolder);
+    itLib->setIcon(0,QIcon(folderIco(CProjectSrc::Lib)));
+
+    pro->toFront(CProjectSrc::Lib);
+    while (pro->hasNext()) {
+
+        const CProjectSrc *src = pro->next();
+        QTreeWidgetItem *it = new QTreeWidgetItem(itLib);
+        it->setText(0,src->compName());
+        it->setText(1,src->fileName());
+        it->setIcon(0,QIcon(src->suffixIco()));
+
+        addItem(it,pro,tr("Библиотеки"),src->list(CProjectSrc::Lib));
+        addItem(it,pro,tr("Входит в состав компонентов"),pro->includes(src->compName(),CProjectSrc::Lib));
+    }
+
+    itLib->sortChildren(0,Qt::AscendingOrder);
+
+    QTreeWidgetItem *itMif = new QTreeWidgetItem(m_treeIndep);
+    itMif->setText(0,folderName(CProjectSrc::Mif));
+    itMif->setText(1,ItemFolder);
+    itMif->setIcon(0,QIcon(folderIco(CProjectSrc::Mif)));
+
+    pro->toFront(CProjectSrc::Mif);
+    while (pro->hasNext()) {
+
+        const CProjectSrc *src = pro->next();
+        QTreeWidgetItem *it = new QTreeWidgetItem(itMif);
+        it->setText(0,src->compName());
+        it->setText(1,src->fileName());
+        it->setIcon(0,QIcon(src->suffixIco()));
+
+        //addItem(it,pro,tr("Библиотеки"),src->list(CProjectSrc::Lib));
+        addItem(it,pro,tr("Входит в состав компонентов"),pro->includes(src->compName(),CProjectSrc::Mif));
+    }
+
+    itMif->sortChildren(0,Qt::AscendingOrder);
 }
 //------------------------------------------------------------------
 
 
-void CWidgetTree::addItem(CProject *pro,
-                          QTreeWidgetItem *parent,
-                          const QString& icmp,
+void CWidgetTree::addItem(QTreeWidgetItem *parent,
+                          CProject *pro,
+                          const QString& mod,
                           const QString& file)
 {
     QTreeWidgetItem *item = new QTreeWidgetItem(parent);
-    item->setText(0,icmp);
+    item->setText(0,mod);
     item->setText(1,file);
     item->setIcon(0,QIcon(pro->src(CProjectSrc::Cmp,file)->suffixIco()));
 
     if (!pro->toFile(CProjectSrc::Cmp,file))
         return;
 
-    QStringList lstCmp(pro->src()->list(CProjectSrc::Cmp));
-    QStringList lstIcmp(pro->src()->list(CProjectSrc::Icmp));
-
-    for (int i = 0; i < lstCmp.size(); ++i)
-        addItem(pro,item,lstIcmp.at(i),pro->fileName(lstCmp.at(i)));
+    foreach (QString imod, pro->src()->list(CProjectSrc::Mod)) {
+        QString cmp(pro->src(CProjectSrc::Cmp,file)->modCmp(imod));
+        addItem(item,pro,QString("%1 - %2").arg(imod).arg(cmp),pro->fileName(cmp));
+    }
 }
 //------------------------------------------------------------------
 
 
-void CWidgetTree::addItem(CProject *pro,
-                          QTreeWidgetItem *parent,
+void CWidgetTree::addItem(QTreeWidgetItem *parent, CProject *pro,
                           CProjectSrc::SrcType type)
 {
     pro->toFront(type);
@@ -148,9 +230,25 @@ void CWidgetTree::addItem(CProject *pro,
 //------------------------------------------------------------------
 
 
-void CWidgetTree::closeProject()
+void CWidgetTree::addItem(QTreeWidgetItem *parent,
+                          CProject *pro,
+                          const QString &textItem,
+                          const QStringList &lst)
 {
-    m_tree->clear();
+    if (!lst.isEmpty()) {
+        QTreeWidgetItem *itSub = new QTreeWidgetItem(parent);
+        itSub->setText(0,textItem);
+        itSub->setText(1,ItemFolder);
+        itSub->setFont(0,m_fontBoldItalic);
+
+        foreach (QString cmp, lst) {
+            QTreeWidgetItem *it = new QTreeWidgetItem(itSub);
+            it->setText(0,cmp);
+            it->setText(1,pro->fileName(cmp));
+        }
+
+        itSub->sortChildren(0,Qt::AscendingOrder);
+    }
 }
 //------------------------------------------------------------------
 
@@ -159,7 +257,7 @@ QString CWidgetTree::folderName(CProjectSrc::SrcType type)
 {
     switch (type) {
     case CProjectSrc::Cmp:
-    case CProjectSrc::Icmp:
+    case CProjectSrc::Mod:
         return tr("Компоненты");
     case CProjectSrc::Lib:
         return tr("Библиотеки");
@@ -169,8 +267,7 @@ QString CWidgetTree::folderName(CProjectSrc::SrcType type)
         return tr("Файлы ngc");
     case CProjectSrc::Ucf:
         return tr("Файлы ucf");
-    default:
-        break;
+    default:;
     }
 
     return CProjectSrc::Unknown;
@@ -182,7 +279,7 @@ QString CWidgetTree::folderIco(CProjectSrc::SrcType type)
 {
     switch (type) {
     case CProjectSrc::Cmp:
-    case CProjectSrc::Icmp:
+    case CProjectSrc::Mod:
         return "://ico/folder_src.png";
     case CProjectSrc::Lib:
         return "://ico/folder_lib.png";
@@ -192,8 +289,7 @@ QString CWidgetTree::folderIco(CProjectSrc::SrcType type)
         return "://ico/folder_ngc.png";
     case CProjectSrc::Ucf:
         return "://ico/folder_ucf.png";
-    default:
-        break;
+    default:;
     }
 
     return CProjectSrc::UnknownIco;
@@ -214,5 +310,22 @@ void CWidgetTree::clickedTreeItem(QTreeWidgetItem* item)
         return;
 
     emit clickedTreeItem(item->text(1));
+}
+//------------------------------------------------------------------
+
+
+void CWidgetTree::currentComboIndexChange(int index)
+{
+    switch (index) {
+    case 0:
+        m_tree->setVisible(true);
+        m_treeIndep->setVisible(false);
+        break;
+    case 1:
+        m_tree->setVisible(false);
+        m_treeIndep->setVisible(true);
+        break;
+    default:;
+    }
 }
 //------------------------------------------------------------------

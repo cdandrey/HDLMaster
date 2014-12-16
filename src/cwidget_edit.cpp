@@ -8,7 +8,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QPlainTextEdit>
-#include <QSettings>
+//#include <QSettings>
 #include <QTextEdit>
 #include <QTextStream>
 #include <QVBoxLayout>
@@ -22,13 +22,12 @@ CWidgetEdit::CWidgetEdit(QWidget *parent) :
     m_header = new CToolBarHeader();
 
     m_combo = new QComboBox();
-    m_combo->addItem("<нет документа>");
-    m_combo->setFixedHeight(m_header->minimumHeight() - 4);
-    m_combo->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
+    m_combo->addItem(tr("<нет документа>"));
+    m_combo->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
 
     m_header->insertWidget(m_header->actHint(),m_combo);
-    m_header->insertSpace(m_header->actHint(),16);
-    m_header->insertStretch(m_header->actHint());
+    m_header->insertSpace(m_header->actHint(),0);
+    //m_header->insertStretch(m_header->actHint());
 
     m_edit = new QTextEdit();
     m_edit->setFont(QFont("Courier",12));

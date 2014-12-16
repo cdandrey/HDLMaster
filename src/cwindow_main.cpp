@@ -85,7 +85,7 @@ CWindowMain::CWindowMain(QWidget *parent)
     connect(m_widgetTree,SIGNAL(clickedTreeItem(QString)),m_widgetEdit,SLOT(view(QString)));
     connect(this,SIGNAL(openSrc(CProjectSrc*)),m_widgetTree,SLOT(addSrc(CProjectSrc*)));
     connect(this,SIGNAL(addProject(CProject*)),m_widgetTree,SLOT(addProject(CProject*)));
-    connect(this,SIGNAL(clearTree()),m_widgetTree,SLOT(closeProject()));
+    connect(this,SIGNAL(clearTree()),m_widgetTree,SIGNAL(clearTree()));
 
     // placement widgets
     m_splTree = new QSplitter(Qt::Horizontal);
@@ -260,7 +260,7 @@ void CWindowMain::openProjectFinish(bool succes)
                             .arg(m_proObj->projectName()));
 
         emit addProject(m_proObj->project());
-        emit messageAppend(tr("Открытие проекто завершилось успешно."));
+        emit messageAppend(tr("Открытие проекта завершилось успешно"));
     }
 }
 //------------------------------------------------------------------

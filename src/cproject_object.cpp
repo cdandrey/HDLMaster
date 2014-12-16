@@ -1,7 +1,7 @@
 #include "cproject_object.h"
 
 #include <QDebug>
-#include <QDir>
+//#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QTextStream>
@@ -35,8 +35,6 @@ CProjectObject::~CProjectObject()
 
 bool CProjectObject::create(const QString &proFileName)
 {
-    qDebug() << "create "  << proFileName;
-
     if (!isEmpty())
         return false;
 

@@ -8,7 +8,7 @@ QT_BEGIN_NAMESPACE
 class CProject;
 class CToolBarHeader;
 class QAction;
-class QThread;
+class QComboBox;
 class QTreeWidget;
 class QTreeWidgetItem;
 QT_END_NAMESPACE
@@ -24,24 +24,31 @@ public:
 
 private:
 
-    CToolBarHeader      *m_header;
     QAction             *m_actVisible;
+    QComboBox           *m_combo;
+    CToolBarHeader      *m_header;
     QTreeWidget         *m_tree;
+    QTreeWidget         *m_treeIndep;
 
-    //CProject            *m_pro;
-    QList<CProjectSrc*>  m_src;
+    QFont                m_fontBold;
+    QFont                m_fontBoldItalic;
 
     static const QString ItemFolder;
 
 
-    void addItem(CProject *pro,
-                 QTreeWidgetItem *parent,
-                 const QString& icmp,
+    void addItem(QTreeWidgetItem *parent,
+                 CProject *pro,
+                 const QString& mod,
                  const QString& file);
 
-    void addItem(CProject *pro,
-                 QTreeWidgetItem *parent,
+    void addItem(QTreeWidgetItem *parent,
+                 CProject *pro,
                  CProjectSrc::SrcType type);
+
+    void addItem(QTreeWidgetItem *parent,
+                 CProject *pro,
+                 const QString& textItem,
+                 const QStringList& lst);
 
     static QString folderName(CProjectSrc::SrcType type);
     static QString folderIco(CProjectSrc::SrcType type);
@@ -50,9 +57,9 @@ private slots:
 
     void addSrc(CProjectSrc* src);
     void addProject(CProject* pro);
-    void closeProject();
     void disabledHide(bool disabled);
     void clickedTreeItem(QTreeWidgetItem*item);
+    void currentComboIndexChange(int);
 
 signals:
 
@@ -60,6 +67,7 @@ signals:
     void messageSet(const QString&);
 
     void clickedTreeItem(const QString &fileName);
+    void clearTree();
 
 };
 
